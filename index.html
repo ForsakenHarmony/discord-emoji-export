@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:url"
+      content="https://discord-emoji-export.netlify.com/"
+    />
+    <meta property="og:title" content="Discord Emoji Export" />
+    <meta property="og:site_name" content="Discord Emoji Export" />
+    <meta
+      property="og:description"
+      content="Export emojis from discord servers / guilds"
+    />
+    <meta property="og:locale" content="en-US" />
+    <meta property="og:creator" content="https://hrmny.sh" />
+    <meta property="twitter:card" content="summary" />
+    <meta property="twitter:creator" content="@hrmny_" />
+    <meta property="twitter:title" content="Discord Emoji Export" />
+    <meta
+      property="twitter:description"
+      content="Export emojis from discord servers / guilds"
+    />
+    <meta
+      property="twitter:site"
+      content="https://discord-emoji-export.netlify.com/"
+    />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Discord Emoji Export</title>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.2.1/dist/jszip.min.js"></script>
+  </head>
+  <body>
+    <h1>Export Discord Emojis</h1>
+    <h1>DO NOT RUN CODE YOU DON'T UNDERSTAND</h1>
+    <ol>
+      <li>Open dev tools (ctrl+shift+i).</li>
+      <li>Click the `Application` Tab</li>
+      <li>Go to Local Storage -> https:// ... discordapp.com ...</li>
+      <li>
+        Search for token and copy the value (right side of the table only)
+      </li>
+      <li>Click the `Console` tab</li>
+      <li>Paste below code and replace the token</li>
+      <li>
+        Copy the result (wihtout quotes, there might be a copy button which just
+        works)
+      </li>
+      <li>Paste it in the Text box here and press load</li>
+      <li>Click on any server and wait a bit for it to load</li>
+    </ol>
+    <section class="code">
+      <code>
+        let token = "INSERT YOUR TOKEN HERE REMOVE ANY EXTRA QUOTES";
+        JSON.stringify(await
+        fetch("https://discordapp.com/api/users/@me/guilds", {headers:
+        {authorization: token}}).then(res => res.json()).then(guilds =>
+        Promise.all(guilds.map(async ({ id, name, icon }) => ({ name, icon: id +
+        "/" + icon , emojis: await
+        fetch(`https://discordapp.com/api/guilds/${id}/emojis`, {headers:
+        {authorization: token}}).then(res => res.json()).then(emojis =>
+        emojis.map(e => [e.name, e.id])) })))))
+      </code>
+    </section>
+    <br />
+    <br />
+    <textarea></textarea>
+    <button>Load</button>
+    <section id="result"></section>
+    <style>
+      html {
+        height: 100%;
+        width: 100%;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: sans-serif;
+        line-height: 1.5;
+        margin: auto;
+        padding: 20px;
+        min-height: 100%;
+        box-sizing: border-box;
+        max-width: 900px;
+      }
+
+      *,
+      *:before,
+      *:after {
+        box-sizing: inherit;
+      }
+
+      section.code {
+        padding: 20px;
+        margin: 20px;
+        background: #eef;
+      }
+
+      section#result {
+        display: grid;
+        grid-gap: 20px;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      }
+
+      button {
+        background: none;
+        border: #33f 1px solid;
+        padding: 5px;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        align-content: flex-start;
+        font-size: 1.3rem;
+      }
+
+      button:hover {
+        background: #eee;
+      }
+    </style>
+    <script>
+      const text = document.querySelector("textarea");
+      const btn = document.querySelector("button");
+      const section = document.getElementById("result");
+
+      const prefix = "https://cdn.discordapp.com/emojis/";
+
+      let guilds = [];
+      text.value = JSON.stringify(guilds);
+
+      async function download(id, name) {
+        const blob = await fetch(
+          "https://cdn.discordapp.com/emojis/" + id
+        ).then(res => res.blob());
+        return [
+          name + "." + blob.type.slice(blob.type.lastIndexOf("/") + 1),
+          blob
+        ];
+      }
+
+      async function downloadGuild(guild) {
+        const zip = new JSZip();
+        await Promise.all(
+          guild.emojis.map(async ([name, id]) => {
+            const [filename, blob] = await download(id, name);
+            zip.file(filename, blob);
+          })
+        );
+        const blob = await zip.generateAsync({
+          type: "blob",
+          compression: "DEFLATE",
+          compressionOptions: {
+            level: 9
+          }
+        });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = guild.name + ".zip";
+        a.click();
+        window.URL.revokeObjectURL(url);
+      }
+
+      function createButtons(guilds) {
+        section.innerHTML = "";
+        guilds.map(g => {
+          const btn = document.createElement("button");
+          btn.innerHTML = `<img src="https://cdn.discordapp.com/icons/${
+            g.icon
+          }.webp?size=64"/>${g.name}`;
+          btn.onclick = e => {
+            e.preventDefault();
+            btn.disabled = true;
+            downloadGuild(g).then(() => (btn.disabled = false));
+          };
+          section.appendChild(btn);
+        });
+      }
+
+      btn.onclick = e => {
+        e.preventDefault();
+        guilds = JSON.parse(text.value);
+        createButtons(guilds);
+      };
+    </script>
+  </body>
+</html>
