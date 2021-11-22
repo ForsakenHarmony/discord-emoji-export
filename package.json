@@ -1,7 +1,7 @@
 {
   "name": "discord-emoji-export",
   "version": "1.0.0",
-  "description": "This is a static template with no bundling",
+  "description": "",
   "main": "index.html",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

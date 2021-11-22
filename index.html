@@ -51,17 +51,43 @@
       <li>Click on any server and wait a bit for it to load</li>
     </ol>
     <section class="code">
-      <code>
-        let token = "INSERT YOUR TOKEN HERE REMOVE ANY EXTRA QUOTES";
-        JSON.stringify(await
-        fetch("https://discordapp.com/api/users/@me/guilds", {headers:
-        {authorization: token}}).then(res => res.json()).then(guilds =>
-        Promise.all(guilds.map(async ({ id, name, icon }) => ({ name, icon: id +
-        "/" + icon , emojis: await
-        fetch(`https://discordapp.com/api/guilds/${id}/emojis`, {headers:
-        {authorization: token}}).then(res => res.json()).then(emojis =>
-        emojis.map(e => [e.name, e.id])) })))))
-      </code>
+      <pre>
+async function fetchAllEmojis(token) {
+  const resp = await fetch(
+    "https://canary.discord.com/api/users/@me/guilds",
+    {headers: {authorization: token}}
+  );
+  const json = await resp.json();
+  if (resp.status !== 200) {
+    console.error('failed to load guilds', json.message || json)
+    return '[]';
+  }
+
+  let guildEmojis = [];
+  for (guild of json) {
+    let { id, name, icon } = guild;
+    let emojisResp = await fetch(
+      `https://canary.discord.com/api/guilds/${id}/emojis`,
+      {headers: {authorization: token}}
+    );
+    let emojisJSON = await emojisResp.json();
+    if (resp.status !== 200) {
+      console.warn('failed to load guild emojis', emojisJSON.message || emojisJSON);
+      continue;
+    }
+
+    guildEmojis.push({
+      name,
+      icon: id + "/" + icon,
+      emojis: emojisJSON.map(e => [e.name, e.id]),
+    })
+  } 
+  
+  return JSON.stringify(guildEmojis);
+}
+
+console.log(await fetchAllEmojis("YOUR_TOKEN_HERE"));</pre
+      >
     </section>
     <br />
     <br />
@@ -100,12 +126,24 @@
         padding: 20px;
         margin: 20px;
         background: #eef;
+        overflow: auto;
+      }
+
+      section.code pre {
+        margin: 0;
       }
 
       section#result {
         display: grid;
         grid-gap: 20px;
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      }
+
+      .error {
+        padding: 5px;
+        margin: 5px;
+        color: hsl(0, 100%, 42.5%);
+        background: hsl(0, 100%, 95%);
       }
 
       button {
@@ -130,13 +168,12 @@
 
       const prefix = "https://cdn.discordapp.com/emojis/";
 
-      let guilds = [];
-      text.value = JSON.stringify(guilds);
+      text.value = JSON.stringify([]);
 
       async function download(id, name) {
         const blob = await fetch(
           "https://cdn.discordapp.com/emojis/" + id
-        ).then(res => res.blob());
+        ).then((res) => res.blob());
         return [
           name + "." + blob.type.slice(blob.type.lastIndexOf("/") + 1),
           blob
@@ -168,12 +205,11 @@
 
       function createButtons(guilds) {
         section.innerHTML = "";
-        guilds.map(g => {
+        guilds.sort((a, b) => (a.name > b.name ? 1 : b.name > a.name ? -1 : 0));
+        guilds.map((g) => {
           const btn = document.createElement("button");
-          btn.innerHTML = `<img src="https://cdn.discordapp.com/icons/${
-            g.icon
-          }.webp?size=64"/>${g.name}`;
-          btn.onclick = e => {
+          btn.innerHTML = `<img src="https://cdn.discordapp.com/icons/${g.icon}.webp?size=64"/>${g.name}`;
+          btn.onclick = (e) => {
             e.preventDefault();
             btn.disabled = true;
             downloadGuild(g).then(() => (btn.disabled = false));
@@ -182,10 +218,18 @@
         });
       }
 
-      btn.onclick = e => {
+      btn.onclick = (e) => {
         e.preventDefault();
-        guilds = JSON.parse(text.value);
-        createButtons(guilds);
+        try {
+          let guilds = JSON.parse(text.value);
+          if (typeof guilds !== "object") {
+            guilds = JSON.parse(guilds);
+          }
+          createButtons(guilds);
+        } catch (e) {
+          section.innerHTML = `<span class="error">Error: ${e}</span>`;
+          console.error(e);
+        }
       };
     </script>
   </body>
