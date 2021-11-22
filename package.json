@@ -4,18 +4,17 @@
   "description": "",
   "main": "index.html",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "build": "mkdir build && mv ./index.html ./build/"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/codesandbox-app/static-template.git"
+    "url": "git+https://github.com/ForsakenHarmony/discord-emoji-export.git"
   },
   "keywords": [],
-  "author": "Ives van Hoorne",
-  "license": "MIT",
+  "author": "Leah <github.leah@hrmny.sh>",
+  "license": "AGPL",
   "bugs": {
-    "url": "https://github.com/codesandbox-app/static-template/issues"
+    "url": "https://github.com/ForsakenHarmony/discord-emoji-export/issues"
   },
-  "homepage": "https://github.com/codesandbox-app/static-template#readme"
+  "homepage": "https://github.com/ForsakenHarmony/discord-emoji-export#readme"
 }
